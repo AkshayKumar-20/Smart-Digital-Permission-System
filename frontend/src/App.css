@@ -1,0 +1,18 @@
+.app-container { background: #0f172a; min-height: 100vh; font-family: 'Inter', sans-serif; }
+.center-viewport { height: 100vh; display: flex; align-items: center; justify-content: center; }
+.auth-card { background: #1e293b; width: 420px; padding: 40px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.05); }
+.icon-box { background: #6366f1; width: 60px; height: 60px; border-radius: 18px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
+.custom-input { background: #0f172a !important; border: 1px solid #334155 !important; color: white !important; padding: 12px !important; }
+.login-btn { background: #6366f1; border: none; border-radius: 12px; transition: 0.3s; }
+.login-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3); }
+
+/* Dashboard Styles */
+.dashboard-layout { display: flex; min-height: 100vh; }
+.sidebar { width: 280px; background: #1e293b; padding: 2.5rem; display: flex; flex-direction: column; border-right: 1px solid rgba(255,255,255,0.05); }
+.content { flex-grow: 1; padding: 3rem; background: #0f172a; }
+.nav-item { color: #94a3b8; display: flex; align-items: center; gap: 15px; padding: 15px; border-radius: 12px; cursor: pointer; transition: 0.3s; }
+.nav-item.active, .nav-item:hover { background: rgba(99, 102, 241, 0.1); color: white; }
+.glass-card { background: #1e293b; border-radius: 20px; padding: 1.5rem; border: 1px solid rgba(255,255,255,0.05); }
+.bubble { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; margin: 0 auto; }
+.bar-graph { height: 150px; display: flex; align-items: flex-end; gap: 10px; }
+.bar { flex: 1; background: #6366f1; border-radius: 5px 5px 0 0; }
