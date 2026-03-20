@@ -1,29 +1,40 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-// Create an axios instance that automatically attaches the token
-const api = axios.create({
-  baseURL: API_URL,
-});
+const api = axios.create({ baseURL: BASE_URL });
 
+// Auto-attach JWT token from localStorage
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
+// ─── Auth ─────────────────────────────────────────────────────────────────────
 export const authService = {
-  login: (credentials) => api.post('/auth/login', credentials),
-  register: (userData) => api.post('/auth/register', userData),
+  register:       (data)       => api.post('/auth/register', data),
+  login:          (data)       => api.post('/auth/login', data),
+  getProfile:     ()           => api.get('/auth/profile'),
+  updateProfile:  (data)       => api.put('/auth/profile', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  getRecipients:  (department) => api.get(`/auth/recipients?department=${encodeURIComponent(department)}`),
 };
 
+// ─── Requests ─────────────────────────────────────────────────────────────────
 export const requestService = {
-  submit: (data) => api.post('/requests/add', data),
-  getAll: (role, userId) => api.get(`/requests/all?role=${role}&userId=${userId}`),
-  updateStatus: (id, status) => api.put(`/requests/update/${id}`, { status }),
+  submit:     (data)       => api.post('/requests/add', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  getAll:     ()           => api.get('/requests/all'),
+  getById:    (id)         => api.get(`/requests/${id}`),
+  approve:    (id, data)   => api.put(`/requests/approve/${id}`, data),
+  reject:     (id, data)   => api.put(`/requests/reject/${id}`, data),
+  getStats:   ()           => api.get('/requests/stats'),
+};
+
+// ─── QR ───────────────────────────────────────────────────────────────────────
+export const qrService = {
+  verify:       (token)  => api.get(`/qr/verify/${token}`),
+  saveScanLog:  (data)   => api.post('/qr/scan-log', data),
+  getScanHistory: ()     => api.get('/qr/scan-history'),
 };
 
 export default api;

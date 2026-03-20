@@ -1,96 +1,83 @@
 import React, { useState } from 'react';
-import { Card, Form, Button, InputGroup } from 'react-bootstrap';
-import { Shield, Mail, Lock, UserCircle } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Shield, Mail, Lock, User, CreditCard } from 'lucide-react';
+import { authService } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
-export default function Login({ onLogin }) {
-  const [role, setRole] = useState('student');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState(''); // State is defined
+export default function Login() {
+  const { login } = useAuth();
+  const navigate  = useNavigate();
+  const [form, setForm]       = useState({ collegeId: '', password: '' });
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Fix: We now "use" the password by including it in the login attempt
-    const userData = {
-      name: email.split('@')[0].toUpperCase(),
-      email: email,
-      password: password, // Password is now USED here
-      dept: 'Computer Science & Engineering',
-      phone: '+91 98765-43210',
-      counselor: 'Dr. Arvinth Kumar'
-    };
-
-    onLogin(userData, role);
+    setLoading(true);
+    try {
+      const { data } = await authService.login(form);
+      login(data.user, data.token);
+      toast.success(`Welcome, ${data.user.name}!`);
+      navigate(`/${data.user.role}`, { replace: true });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="login-viewport">
-      <div className="login-background-blobs"></div>
-      <Card className="glass-login-card shadow-2xl border-0 animate-in">
-        <div className="text-center mb-5">
-          <div className="login-icon-wrapper">
-            <Shield size={40} color="#fff" />
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-header">
+          <div className="logo-icon">
+            <Shield size={28} color="#fff" />
           </div>
-          <h2 className="fw-bold mt-3 text-dark">Smart Portal</h2>
-          <p className="text-muted small">Enter credentials to access your dashboard</p>
+          <h2>Smart Permission System</h2>
+          <p>Sign in to access your dashboard</p>
         </div>
 
-        <Form onSubmit={handleSubmit}>
-          {/* Role Selection */}
-          <Form.Group className="mb-4">
-            <Form.Label className="small fw-bold text-secondary text-uppercase">Login As</Form.Label>
-            <InputGroup className="custom-input-group shadow-sm">
-              <InputGroup.Text className="bg-white border-end-0"><UserCircle size={18} /></InputGroup.Text>
-              <Form.Select
-                className="p-3 border-start-0 shadow-none"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-              >
-                <option value="student">Student Account</option>
-                <option value="faculty">Faculty Member</option>
-                <option value="hod">HOD</option>
-                <option value="principal">Principal</option>
-              </Form.Select>
-            </InputGroup>
-          </Form.Group>
-
-          {/* Email Input */}
-          <Form.Group className="mb-4">
-            <Form.Label className="small fw-bold text-secondary text-uppercase">University Email</Form.Label>
-            <InputGroup className="custom-input-group shadow-sm">
-              <InputGroup.Text className="bg-white border-end-0"><Mail size={18} /></InputGroup.Text>
-              <Form.Control
-                type="email"
-                placeholder="name@university.edu"
-                className="p-3 border-start-0 shadow-none"
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label">College ID</label>
+            <div style={{ position: 'relative' }}>
+              <CreditCard size={16} style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)' }} />
+              <input
+                className="form-control"
+                style={{ paddingLeft: 36 }}
+                placeholder="e.g. CS2024001"
+                value={form.collegeId}
+                onChange={e => setForm({ ...form, collegeId: e.target.value })}
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
               />
-            </InputGroup>
-          </Form.Group>
+            </div>
+          </div>
 
-          {/* Password Input */}
-          <Form.Group className="mb-5">
-            <Form.Label className="small fw-bold text-secondary text-uppercase">Password</Form.Label>
-            <InputGroup className="custom-input-group shadow-sm">
-              <InputGroup.Text className="bg-white border-end-0"><Lock size={18} /></InputGroup.Text>
-              <Form.Control
+          <div className="form-group">
+            <label className="form-label">Password</label>
+            <div style={{ position: 'relative' }}>
+              <Lock size={16} style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)' }} />
+              <input
                 type="password"
+                className="form-control"
+                style={{ paddingLeft: 36 }}
                 placeholder="••••••••"
-                className="p-3 border-start-0 shadow-none"
+                value={form.password}
+                onChange={e => setForm({ ...form, password: e.target.value })}
                 required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
               />
-            </InputGroup>
-          </Form.Group>
+            </div>
+          </div>
 
-          <Button type="submit" variant="primary" className="w-100 py-3 fw-bold login-btn rounded-3">
-            Sign In to Dashboard
-          </Button>
-        </Form>
-      </Card>
+          <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={loading} style={{ marginTop: 8 }}>
+            {loading ? <span className="spinner" /> : 'Sign In'}
+          </button>
+        </form>
+
+        <p style={{ textAlign:'center', marginTop:'1.5rem', fontSize:'.875rem', color:'var(--text-secondary)' }}>
+          Don't have an account? <Link to="/register" style={{ color:'var(--primary)', fontWeight:600 }}>Register</Link>
+        </p>
+      </div>
     </div>
   );
 }
