@@ -14,7 +14,7 @@ const StatusBadge = ({ status }) => (
 );
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
-const Sidebar = ({ active, setActive, onLogout, title }) => {
+const Sidebar = ({ active, setActive, onLogout, title, sidebarOpen }) => {
   const links = [
     { key:'dashboard', icon:<Home size={18}/>,        label:'Dashboard' },
     { key:'inbox',     icon:<Inbox size={18}/>,       label:'Inbox' },
@@ -24,7 +24,7 @@ const Sidebar = ({ active, setActive, onLogout, title }) => {
     { key:'notifications', icon:<Bell size={18}/>,    label:'Notifications' },
   ];
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${sidebarOpen?'sidebar-open':''}`}>
       <div className="sidebar-brand">
         <div className="brand-icon"><CheckCircle size={18} color="#fff"/></div>
         <h4>{title}</h4>
@@ -293,6 +293,7 @@ export default function TeacherDashboard() {
   const navigate         = useNavigate();
   const [active, setActive]   = useState('dashboard');
   const [requests, setRequests] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const fetch = useCallback(async () => {
     try { const { data } = await requestService.getAll(); setRequests(data); }
@@ -302,10 +303,13 @@ export default function TeacherDashboard() {
   useEffect(() => { fetch(); }, [fetch]);
 
   const handleLogout = () => { logout(); navigate('/login'); };
+  const handleNavClick = (key) => { setActive(key); setSidebarOpen(false); };
 
   return (
     <div className="app-shell">
-      <Sidebar active={active} setActive={setActive} onLogout={handleLogout} title="Faculty Portal"/>
+      <button className="mobile-menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+      <div className={`mobile-overlay ${sidebarOpen?'active':''}`} onClick={() => setSidebarOpen(false)}/>
+      <Sidebar active={active} setActive={handleNavClick} onLogout={handleLogout} title="Faculty Portal" sidebarOpen={sidebarOpen}/>
       <div className="main-content">
         {active==='dashboard'  && <DashHome user={user} requests={requests}/>}
         {active==='inbox'      && <InboxTab user={user} requests={requests} onAction={fetch}/>}

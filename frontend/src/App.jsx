@@ -12,6 +12,7 @@ import TeacherDash  from './pages/teacher/TeacherDashboard';
 import HODDash      from './pages/hod/HODDashboard';
 import PrincipalDash from './pages/principal/PrincipalDashboard';
 import WatchmanDash from './pages/watchman/WatchmanDashboard';
+import AdminDash   from './pages/admin/AdminDashboard';
 
 /**
  * RoleRoute — Wraps a route so only the allowed role can access it.
@@ -53,6 +54,9 @@ const AppRoutes = () => {
       }/>
       <Route path="/watchman/*" element={
         <RoleRoute allowedRole="watchman"><WatchmanDash /></RoleRoute>
+      }/>
+      <Route path="/admin/*" element={
+        <RoleRoute allowedRole="admin"><AdminDash /></RoleRoute>
       }/>
 
       {/* Catchall */}

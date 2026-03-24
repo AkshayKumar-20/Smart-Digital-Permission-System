@@ -2,7 +2,8 @@ const express = require("express");
 const router  = express.Router();
 const { protect, allowRoles } = require("../middleware/authMiddleware");
 const {
-  loginUser, registerUser, getProfile, updateProfile, getRecipientsByDept
+  loginUser, registerUser, getProfile, updateProfile, getRecipientsByDept,
+  getAllUsers, deleteUser
 } = require("../controllers/authController");
 const multer = require("multer");
 const path   = require("path");
@@ -22,5 +23,9 @@ router.post("/login",    loginUser);
 router.get("/profile",              protect, getProfile);
 router.put("/profile", protect,     upload.single("photo"), updateProfile);
 router.get("/recipients",           protect, getRecipientsByDept);
+
+// Admin routes
+router.get   ("/users",     protect, allowRoles("admin"), getAllUsers);
+router.delete("/users/:id", protect, allowRoles("admin"), deleteUser);
 
 module.exports = router;

@@ -6,13 +6,13 @@ import { qrService } from '../../services/api';
 import toast from 'react-hot-toast';
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
-const Sidebar = ({ active, setActive, onLogout }) => {
+const Sidebar = ({ active, setActive, onLogout, sidebarOpen }) => {
   const links = [
     { key:'scan',    icon:<Camera size={18}/>,       label:'Scan QR' },
     { key:'history', icon:<Clock size={18}/>,        label:'Scan History' },
   ];
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${sidebarOpen?'sidebar-open':''}`}>
       <div className="sidebar-brand">
         <div className="brand-icon"><CheckCircle size={18} color="#fff"/></div>
         <h4>Gate Watch</h4>
@@ -232,12 +232,16 @@ export default function WatchmanDashboard() {
   const { logout } = useAuth();
   const navigate   = useNavigate();
   const [active, setActive] = useState('scan');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => { logout(); navigate('/login'); };
+  const handleNavClick = (key) => { setActive(key); setSidebarOpen(false); };
 
   return (
     <div className="app-shell">
-      <Sidebar active={active} setActive={setActive} onLogout={handleLogout}/>
+      <button className="mobile-menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+      <div className={`mobile-overlay ${sidebarOpen?'active':''}`} onClick={() => setSidebarOpen(false)}/>
+      <Sidebar active={active} setActive={handleNavClick} onLogout={handleLogout} sidebarOpen={sidebarOpen}/>
       <div className="main-content">
         {active==='scan'    && <ScanPage/>}
         {active==='history' && <HistoryPage/>}

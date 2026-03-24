@@ -6,9 +6,18 @@ const generateQRToken = require("../utils/generateQR");
 exports.createRequest = async (req, res) => {
   try {
     const studentId = req.user.id;
-    const { requestType, reason, description, fromDate, toDate, recipientIds } = req.body;
-
-    if (!recipientIds || !Array.isArray(recipientIds) || recipientIds.length === 0) {
+    const { requestType, reason, description, fromDate, toDate } = req.body;
+    
+    // Handle recipientIds - may come as string (single) or array (multiple) from FormData
+    let recipientIds = req.body.recipientIds;
+    if (!recipientIds) {
+      return res.status(400).json({ message: "At least one recipient is required" });
+    }
+    // Normalize to array
+    if (!Array.isArray(recipientIds)) {
+      recipientIds = [recipientIds];
+    }
+    if (recipientIds.length === 0) {
       return res.status(400).json({ message: "At least one recipient is required" });
     }
 

@@ -17,7 +17,7 @@ const COLORS = ['#F59E0B', '#10B981', '#EF4444'];
 const BASE_API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
-const Sidebar = ({ active, setActive, onLogout }) => {
+const Sidebar = ({ active, setActive, onLogout, sidebarOpen }) => {
   const links = [
     { key:'dashboard', icon:<Home size={18}/>,        label:'Dashboard' },
     { key:'new',       icon:<Plus size={18}/>,        label:'New Request' },
@@ -29,7 +29,7 @@ const Sidebar = ({ active, setActive, onLogout }) => {
     { key:'notifications', icon:<Bell size={18}/>,    label:'Notifications' },
   ];
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${sidebarOpen?'sidebar-open':''}`}>
       <div className="sidebar-brand">
         <div className="brand-icon"><CheckCircle size={18} color="#fff"/></div>
         <h4>SmartPermit</h4>
@@ -560,6 +560,7 @@ export default function StudentDashboard() {
   const [active, setActive]   = useState('dashboard');
   const [requests, setRequests] = useState([]);
   const [selectedReq, setSelectedReq] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const fetchRequests = useCallback(async () => {
     try {
@@ -577,9 +578,13 @@ export default function StudentDashboard() {
     setActive('new');
   };
 
+  const handleNavClick = (key) => { setActive(key); setSidebarOpen(false); };
+
   return (
     <div className="app-shell">
-      <Sidebar active={active} setActive={setActive} onLogout={handleLogout}/>
+      <button className="mobile-menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+      <div className={`mobile-overlay ${sidebarOpen?'active':''}`} onClick={() => setSidebarOpen(false)}/>
+      <Sidebar active={active} setActive={handleNavClick} onLogout={handleLogout} sidebarOpen={sidebarOpen}/>
       <div className="main-content">
         {active==='dashboard'    && <DashHome user={user} requests={requests}/>}
         {active==='new'         && <NewRequest user={user} onSuccess={()=>{ fetchRequests(); setActive('history'); }}/>}

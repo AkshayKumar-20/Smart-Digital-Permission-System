@@ -10,7 +10,7 @@ import {
 
 const StatusBadge = ({ status }) => <span className={`badge-status badge-${status}`}>{status}</span>;
 
-const Sidebar = ({ active, setActive, onLogout }) => {
+const Sidebar = ({ active, setActive, onLogout, sidebarOpen }) => {
   const links = [
     { key:'dashboard', icon:<Home size={18}/>,        label:'Dashboard' },
     { key:'inbox',     icon:<Inbox size={18}/>,       label:'Inbox' },
@@ -21,7 +21,7 @@ const Sidebar = ({ active, setActive, onLogout }) => {
     { key:'notifications', icon:<Bell size={18}/>,    label:'Notifications' },
   ];
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${sidebarOpen?'sidebar-open':''}`}>
       <div className="sidebar-brand">
         <div className="brand-icon"><CheckCircle size={18} color="#fff"/></div>
         <h4>Principal</h4>
@@ -185,27 +185,115 @@ const Reports = ({ requests }) => {
   );
 };
 
+const CollegeAnalytics = ({ requests }) => {
+  const monthly = {};
+  requests.forEach(r => {
+    const key = new Date(r.createdAt).toLocaleString('default', { month:'short', year:'2-digit' });
+    if (!monthly[key]) monthly[key] = { name:key, approved:0, pending:0, rejected:0 };
+    monthly[key][r.status]++;
+  });
+  const barData = Object.values(monthly);
+
+  // Department breakdown
+  const deptStats = {};
+  requests.forEach(r => {
+    const dept = r.student?.department || 'Unknown';
+    if (!deptStats[dept]) deptStats[dept] = { name:dept, total:0, approved:0, pending:0, rejected:0 };
+    deptStats[dept].total++;
+    deptStats[dept][r.status]++;
+  });
+  const deptData = Object.values(deptStats);
+
+  const total = requests.length;
+  const approved = requests.filter(r=>r.status==='approved').length;
+  const rate = total > 0 ? Math.round((approved / total) * 100) : 0;
+
+  return (
+    <div>
+      <div className="top-header"><div className="greeting"><h2>College-Wide Analytics</h2><p>All departments overview</p></div></div>
+      <div className="grid-4" style={{ marginBottom:'1.5rem' }}>
+        {[['Total', total, 'var(--primary)'], ['Approved', approved, 'var(--success)'], ['Pending', requests.filter(r=>r.status==='pending').length, 'var(--warning)'], ['Approval Rate', rate+'%', 'var(--info)']].map(([l,v,c])=>(
+          <div key={l} className="card stat-card"><div className="stat-value" style={{ color:c }}>{v}</div><div className="stat-label">{l}</div></div>
+        ))}
+      </div>
+      <div className="grid-2">
+        <div className="card">
+          <h3 style={{ fontSize:'1rem', fontWeight:700, marginBottom:'1rem' }}>Monthly Request Volume</h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={barData}>
+              <CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="name"/><YAxis/><Tooltip/><Legend/>
+              <Bar dataKey="approved" fill="#10B981" name="Approved"/>
+              <Bar dataKey="pending"  fill="#F59E0B" name="Pending"/>
+              <Bar dataKey="rejected" fill="#EF4444" name="Rejected"/>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="card">
+          <h3 style={{ fontSize:'1rem', fontWeight:700, marginBottom:'1rem' }}>Department Breakdown</h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={deptData}>
+              <CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="name"/><YAxis/><Tooltip/><Legend/>
+              <Bar dataKey="approved" fill="#10B981" name="Approved" stackId="a"/>
+              <Bar dataKey="pending"  fill="#F59E0B" name="Pending"  stackId="a"/>
+              <Bar dataKey="rejected" fill="#EF4444" name="Rejected" stackId="a"/>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Notifications = ({ requests }) => {
+  const items = requests.slice(0,10).map(r => ({
+    msg: `${r.student?.name} (${r.student?.department}) — ${r.requestType}: ${r.status.toUpperCase()}`,
+    time: new Date(r.updatedAt || r.createdAt).toLocaleString(),
+    status: r.status
+  }));
+  return (
+    <div>
+      <div className="top-header"><div className="greeting"><h2>Notifications 🔔</h2></div></div>
+      <div className="card" style={{ padding:0 }}>
+        {items.length === 0 && <p style={{ padding:'2rem', textAlign:'center', color:'var(--text-muted)' }}>No notifications</p>}
+        {items.map((n,i) => (
+          <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'1rem 1.5rem', borderBottom:'1px solid var(--border)' }}>
+            <div style={{ width:8, height:8, borderRadius:'50%', background: n.status==='approved'?'var(--success)':n.status==='rejected'?'var(--danger)':'var(--warning)', marginTop:6, flexShrink:0 }}/>
+            <div>
+              <p style={{ margin:0, fontWeight:500, fontSize:'.875rem' }}>{n.msg}</p>
+              <p style={{ margin:0, fontSize:'.75rem', color:'var(--text-muted)' }}>{n.time}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export default function PrincipalDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [active, setActive] = useState('dashboard');
   const [requests, setRequests] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const fetch = useCallback(async () => {
     try { const { data } = await requestService.getAll(); setRequests(data); } catch {}
   }, []);
   useEffect(() => { fetch(); }, [fetch]);
   const handleLogout = () => { logout(); navigate('/login'); };
+  const handleNavClick = (key) => { setActive(key); setSidebarOpen(false); };
   return (
     <div className="app-shell">
-      <Sidebar active={active} setActive={setActive} onLogout={handleLogout}/>
+      <button className="mobile-menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+      <div className={`mobile-overlay ${sidebarOpen?'active':''}`} onClick={() => setSidebarOpen(false)}/>
+      <Sidebar active={active} setActive={handleNavClick} onLogout={handleLogout} sidebarOpen={sidebarOpen}/>
       <div className="main-content">
         {active==='dashboard'     && <DashHome user={user} requests={requests}/>}
         {active==='inbox'         && <InboxTab user={user} requests={requests} onAction={fetch}/>}
         {active==='approved'      && <HistoryTab requests={requests} filterStatus="approved" title="All Approved Requests"/>}
         {active==='rejected'      && <HistoryTab requests={requests} filterStatus="rejected" title="All Rejected Requests"/>}
-        {active==='analytics'     && <div className="card" style={{ padding:'2rem', textAlign:'center', color:'var(--text-muted)' }}>College analytics coming soon</div>}
+        {active==='analytics'     && <CollegeAnalytics requests={requests}/>}
         {active==='reports'       && <Reports requests={requests}/>}
-        {active==='notifications' && <div className="card" style={{ padding:'2rem', textAlign:'center', color:'var(--text-muted)' }}>No notifications</div>}
+        {active==='notifications' && <Notifications requests={requests}/>}
       </div>
     </div>
   );

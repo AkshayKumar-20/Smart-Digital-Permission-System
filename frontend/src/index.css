@@ -219,10 +219,42 @@ select.form-control { appearance: none; }
 .scan-expired { background: #FEF3C7; border: 2px solid var(--warning); }
 .scan-invalid { background: #FEE2E2; border: 2px solid var(--danger); }
 
+/* ─── Mobile Hamburger Button ────────────────────────────────── */
+.mobile-menu-btn {
+  display: none;
+  position: fixed; top: 16px; left: 16px; z-index: 1100;
+  width: 44px; height: 44px; border-radius: 10px;
+  background: var(--primary); color: #fff; border: none;
+  align-items: center; justify-content: center; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(79,70,229,.35);
+  transition: transform .2s;
+}
+.mobile-menu-btn:hover { transform: scale(1.05); }
+
+.mobile-overlay {
+  display: none;
+  position: fixed; inset: 0; background: rgba(0,0,0,.4);
+  z-index: 999; backdrop-filter: blur(2px);
+}
+
 /* ─── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .sidebar { display: none; }
+  .mobile-menu-btn { display: flex; }
+  .sidebar {
+    position: fixed; left: -280px; top: 0; z-index: 1050;
+    width: 260px; height: 100vh;
+    transition: left .3s ease;
+    box-shadow: 4px 0 24px rgba(0,0,0,.3);
+  }
+  .sidebar.sidebar-open { left: 0; }
+  .mobile-overlay.active { display: block; }
   .grid-4, .grid-3 { grid-template-columns: 1fr 1fr; }
   .grid-2 { grid-template-columns: 1fr; }
-  .main-content { padding: 1rem; }
+  .main-content { padding: 1rem; padding-top: 4.5rem; }
+  .top-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+}
+
+@media (max-width: 480px) {
+  .grid-4, .grid-3 { grid-template-columns: 1fr; }
+  .stat-card .stat-value { font-size: 1.5rem; }
 }

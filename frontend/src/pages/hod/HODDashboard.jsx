@@ -12,7 +12,7 @@ import {
 
 const StatusBadge = ({ status }) => <span className={`badge-status badge-${status}`}>{status}</span>;
 
-const Sidebar = ({ active, setActive, onLogout }) => {
+const Sidebar = ({ active, setActive, onLogout, sidebarOpen }) => {
   const links = [
     { key:'dashboard', icon:<Home size={18}/>,        label:'Dashboard' },
     { key:'inbox',     icon:<Inbox size={18}/>,       label:'Inbox' },
@@ -22,7 +22,7 @@ const Sidebar = ({ active, setActive, onLogout }) => {
     { key:'notifications', icon:<Bell size={18}/>,    label:'Notifications' },
   ];
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${sidebarOpen?'sidebar-open':''}`}>
       <div className="sidebar-brand">
         <div className="brand-icon"><CheckCircle size={18} color="#fff"/></div>
         <h4>HOD Portal</h4>
@@ -179,26 +179,91 @@ const HistoryTab = ({ user, requests, filterStatus, title }) => {
   );
 };
 
+const Analytics = ({ user, requests }) => {
+  const monthly = {};
+  requests.forEach(r => {
+    const myRec = r.recipients?.find(rec => rec.user?._id === user.id);
+    if (!myRec || myRec.action === 'pending') return;
+    const key = new Date(r.createdAt).toLocaleString('default', { month:'short', year:'2-digit' });
+    if (!monthly[key]) monthly[key] = { name:key, approved:0, rejected:0, escalated:0 };
+    monthly[key][myRec.action]++;
+  });
+  const barData = Object.values(monthly);
+  const totalActed = requests.filter(r => r.recipients?.some(rec => rec.user?._id === user.id && rec.action !== 'pending')).length;
+  const approvedCount = requests.filter(r => r.recipients?.some(rec => rec.user?._id === user.id && rec.action === 'approved')).length;
+  const rate = totalActed > 0 ? Math.round((approvedCount / totalActed) * 100) : 0;
+  return (
+    <div>
+      <div className="top-header"><div className="greeting"><h2>Department Analytics</h2><p>Your approval activity for {user.department}</p></div></div>
+      <div className="grid-3" style={{ marginBottom:'1.5rem' }}>
+        {[['Total Acted', totalActed, 'var(--primary)'], ['Approved', approvedCount, 'var(--success)'], ['Approval Rate', rate+'%', 'var(--info)']].map(([l,v,c])=>(
+          <div key={l} className="card stat-card"><div className="stat-value" style={{ color:c }}>{v}</div><div className="stat-label">{l}</div></div>
+        ))}
+      </div>
+      <div className="card">
+        <h3 style={{ fontSize:'1rem', fontWeight:700, marginBottom:'1rem' }}>Actions Per Month</h3>
+        <ResponsiveContainer width="100%" height={280}>
+          <BarChart data={barData}>
+            <CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="name"/><YAxis/><Tooltip/><Legend/>
+            <Bar dataKey="approved"  fill="#10B981" name="Approved"/>
+            <Bar dataKey="rejected"  fill="#EF4444" name="Rejected"/>
+            <Bar dataKey="escalated" fill="#8B5CF6" name="Escalated"/>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
+const Notifications = ({ requests }) => {
+  const items = requests.slice(0,10).map(r => ({
+    msg: `${r.student?.name}'s ${r.requestType} request is ${r.status.toUpperCase()}`,
+    time: new Date(r.updatedAt || r.createdAt).toLocaleString(),
+    status: r.status
+  }));
+  return (
+    <div>
+      <div className="top-header"><div className="greeting"><h2>Notifications 🔔</h2></div></div>
+      <div className="card" style={{ padding:0 }}>
+        {items.length === 0 && <p style={{ padding:'2rem', textAlign:'center', color:'var(--text-muted)' }}>No notifications</p>}
+        {items.map((n,i) => (
+          <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'1rem 1.5rem', borderBottom:'1px solid var(--border)' }}>
+            <div style={{ width:8, height:8, borderRadius:'50%', background: n.status==='approved'?'var(--success)':n.status==='rejected'?'var(--danger)':'var(--warning)', marginTop:6, flexShrink:0 }}/>
+            <div>
+              <p style={{ margin:0, fontWeight:500, fontSize:'.875rem' }}>{n.msg}</p>
+              <p style={{ margin:0, fontSize:'.75rem', color:'var(--text-muted)' }}>{n.time}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export default function HODDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [active, setActive] = useState('dashboard');
   const [requests, setRequests] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const fetch = useCallback(async () => {
     try { const { data } = await requestService.getAll(); setRequests(data); } catch {}
   }, []);
   useEffect(() => { fetch(); }, [fetch]);
   const handleLogout = () => { logout(); navigate('/login'); };
+  const handleNavClick = (key) => { setActive(key); setSidebarOpen(false); };
   return (
     <div className="app-shell">
-      <Sidebar active={active} setActive={setActive} onLogout={handleLogout}/>
+      <button className="mobile-menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+      <div className={`mobile-overlay ${sidebarOpen?'active':''}`} onClick={() => setSidebarOpen(false)}/>
+      <Sidebar active={active} setActive={handleNavClick} onLogout={handleLogout} sidebarOpen={sidebarOpen}/>
       <div className="main-content">
         {active==='dashboard'     && <DashHome user={user} requests={requests}/>}
         {active==='inbox'         && <InboxTab user={user} requests={requests} onAction={fetch}/>}
         {active==='approved'      && <HistoryTab user={user} requests={requests} filterStatus="approved" title="Approved Requests"/>}
         {active==='rejected'      && <HistoryTab user={user} requests={requests} filterStatus="rejected" title="Rejected Requests"/>}
-        {active==='analytics'     && <div className="card" style={{ padding:'2rem', textAlign:'center', color:'var(--text-muted)' }}>Analytics coming soon</div>}
-        {active==='notifications' && <div className="card" style={{ padding:'2rem', textAlign:'center', color:'var(--text-muted)' }}>No notifications</div>}
+        {active==='analytics'     && <Analytics user={user} requests={requests}/>}
+        {active==='notifications' && <Notifications requests={requests}/>}
       </div>
     </div>
   );
